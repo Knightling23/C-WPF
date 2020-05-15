@@ -1,0 +1,267 @@
+using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Json;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace Final_Exam
+{
+    /*
+     * File: MainWindow.xaml
+     * 
+     * Purpose:This file is meant to set as the primary code manfiestations
+     * for the enitre program.
+     * 
+     * Here a Json file can be called in to be importedinto the listbox
+     * also the various menu buttons are also avaible
+     * 
+     * 
+     * 
+     * Written by: Adam Saez
+     * 
+     * 
+     * Compiler: Visual Studio 2019
+     */
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+      
+        
+        List <Ingredient> Ing = new List<Ingredient>();
+        
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void Grid_Loaded(object sender, RoutedEventArgs e)//ignore
+        {
+
+
+
+        }
+
+        //****************************************************
+        // Method: WindowLoaded
+        // Purpose: Here the database ingredients will be automatically red and displaed to the screen
+        //****************************************************
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Ingredient Ing = new Ingredient();
+            string connString = @"server=(LocalDB)\MSSQLLocalDB;";
+            connString += "integrated security=SSPI;";
+            connString += "database=Ingredients";//pick a database
+            SqlConnection sqlConn;
+
+            sqlConn = new SqlConnection(connString);
+
+            sqlConn.Open(); // Open the connection​
+            string sql = "Select * From Ingredients";
+
+            SqlCommand command = new SqlCommand(sql, sqlConn);
+
+
+
+
+            SqlDataReader reader = command.ExecuteReader();//actaully reads it
+           
+
+            IngredientsListBox.ItemsSource = reader;
+
+            
+            IngredientsListBox.DisplayMemberPath = "Name";// this will prevent whole of data to be shown to user, only the name will be shown
+
+
+
+
+
+
+        }
+
+        private void IngredientsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+          
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)//exit the program
+        {
+            Close();
+        }
+
+        //****************************************************
+        // Method: MenuItem_Click_1
+        // Purpose: Here A Json file is read and will replace the data inn the current ingredients database
+        //first it will clear said database with a delete statment then import data from a json file into the databse
+        //then that data is read to be displayed
+        //****************************************************
+        private void MenuItem_Click_1(object sender, RoutedEventArgs e)//import from json 
+        {
+
+            string connString = @"server=(LocalDB)\MSSQLLocalDB;";
+            connString += "integrated security=SSPI;";
+            connString += "database=Ingredients";//pick a database
+
+            SqlConnection sqlConn;
+            sqlConn = new SqlConnection(connString);
+            sqlConn.Open();
+
+
+            OpenFileDialog FileDialog = new OpenFileDialog();
+            FileDialog.Multiselect = true;
+            FileDialog.Filter = "All Files(*.*)|*.*";
+            FileDialog.DefaultExt = ".log";
+
+            Nullable<bool> DialogOK = FileDialog.ShowDialog();//show fileexplorer
+
+
+            if (DialogOK == true)
+            {
+
+                string FileName = FileDialog.FileNames[0];
+
+
+                // Create a string variable and get user input from the file dialog and store it in the variable
+                FileStream reader = new FileStream(FileName, FileMode.Open, FileAccess.Read);
+                DataContractJsonSerializer inputSerializer = new DataContractJsonSerializer(typeof(List<Ingredient>));
+                Ing = (List<Ingredient>)inputSerializer.ReadObject(reader);//will read in ingredients as a list
+
+
+
+
+                
+                //deletes data from ingredients table
+                string sqlDelete = "Delete from Ingredients";
+
+
+                sqlConn.Close();//backup close in case user or systems dosent close the Ingredients table,leaving it open
+
+
+                sqlConn.Open();
+
+                SqlCommand commandDelete = new SqlCommand(sqlDelete, sqlConn);
+                commandDelete.ExecuteNonQuery();
+                
+
+
+
+
+               
+
+                //adds json file data to ingredients table
+
+                for (int i =0; i< Ing.Count ; i++) {
+                string sql = string.Format("Insert into Ingredients" + "(Name,Quantity,UnitofMeasurment) Values" +
+                    "('{0}','{1}','{2}')",Ing[i].Name,Ing[i].Quantity,Ing[i].UnitofMeasurment);//this line will read in the json file data and place it into variables
+
+                    SqlCommand command = new SqlCommand(sql, sqlConn);
+
+                   int rowsaffected = command.ExecuteNonQuery();//executes the insert into the database
+
+                    
+                }
+
+              
+               
+                sqlConn.Close();//closes database to prevent misuse
+
+
+                readJson();//this will call a method to reread databse and display to user
+
+
+
+
+
+
+
+
+            }//end of if statement
+            
+
+
+        }
+        //****************************************************
+        // Method: MenuItem_Click_2
+        // Purpose: Serves as the means to inform user about this program
+        //****************************************************
+        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        {
+
+
+            MessageBox.Show("Ingredients \n Version 1.0 \n Written by Adam Saez");
+       
+        }
+
+        //****************************************************
+        // Method:readJson
+        // Purpose: Serves as the means read the ingredients database and display said data to screen for user interaction
+        //****************************************************
+        private void readJson()
+        {
+            Ingredient Ing = new Ingredient();
+            string connString = @"server=(LocalDB)\MSSQLLocalDB;";
+            connString += "integrated security=SSPI;";
+            connString += "database=Ingredients";//pick a database
+            SqlConnection sqlConn;
+
+            sqlConn = new SqlConnection(connString);
+
+            sqlConn.Open(); // Open the connection​
+            string sql = "Select * From Ingredients";
+
+            SqlCommand command = new SqlCommand(sql, sqlConn);
+
+
+
+
+            SqlDataReader reader = command.ExecuteReader();//actaully reads it
+
+
+            IngredientsListBox.ItemsSource = reader;
+
+
+            IngredientsListBox.DisplayMemberPath = "Name";// this will prevent whole of data to be shown to user, only the name will be shown
+
+
+        }
+
+      
+
+
+    }
+}
